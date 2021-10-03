@@ -1,13 +1,18 @@
 // Load Express 
 const express = require('express')
+// Execute Express
 const app = express()
+// Set port for this kind of project
 const port = 3001
-
 // Load handlebars
 const exphbs = require('express-handlebars')
+// Load method-override
+const methodOverride = require('method-override')
+// Load express router from index.js under routes folder
+const routes = require('./routes')
 
-// Load JSON file of restaurant data
-const restaurantList = require('./restaurant.json')
+// Load mongoose configuration
+require('./config/mongoose')
 
 // Set template engine
 app.engine('handlebars', exphbs({ defaultLayout: 'main' }))
@@ -16,38 +21,16 @@ app.set('view engine', 'handlebars')
 // Set static files by specifying the folder
 app.use(express.static('public'))
 
-// Set route of index page and corresponding response
-app.get('/', (req, res) => {
-  // Pass data to handlebars
-  res.render('index', { restaurants: restaurantList.results })
-})
+// Convert into req.body using bodyParser
+app.use(express.urlencoded({ extended: true }))
 
-// Set route of searched results
-app.get('/search', (req, res) => {
-  // Prevent blank space shown in keyword
-  const keyword = req.query.keyword.trim()
-  // Select the name-matched restaurants or the category-matched restaurants
-  const restaurants = restaurantList.results.filter(restaurant => {
-    return restaurant.name.toLowerCase().includes(keyword.toLowerCase()) || restaurant.category.toLowerCase().includes(keyword.toLowerCase())
-  })
-  // Provide hint message (used when there's no matched restaurants in restaurant array)
-  let searched_msg = ``
-  if (restaurants.length === 0) {
-    searched_msg = `No matched results :(`
-  }
-  // Pass data to handlebars
-  res.render('index', { restaurants: restaurants, keyword: keyword, searched_msg: searched_msg })
-})
+// Process every request using method-override
+app.use(methodOverride('_method'))
 
-// Set route of show page and corresponding response
-app.get('/restaurants/:restaurant_id', (req, res) => {
-  // Retrieve a specific restaurant data
-  const restaurant = restaurantList.results.find(restaurant => restaurant.id.toString() === req.params.restaurant_id)
-  // Pass data to handlebars
-  res.render('show', { restaurant: restaurant })
-})
+// Process every request into its right route using express router
+app.use(routes)
 
-// Listen the server on port 3001 when it started
+// Start server and Listen for request coming from port 3001
 app.listen(port, () => {
   console.log(`Express is running on http://localhost:${port}`)
 })
